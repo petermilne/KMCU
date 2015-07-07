@@ -1,0 +1,148 @@
+#!/bin/sh
+
+source /usr/local/bin/acq400_init_gpio_common.sh
+
+common_begin
+
+# i2c gpio
+
+get_gpiochip() 
+{
+	echo $(basename $(echo /sys/bus/i2c/devices/$1-$2/gpio/gpiochip*))	
+}
+
+
+
+
+
+CHIP122=$(get_gpiochip 1 0022) 
+let GPIO_MB1=${CHIP122#gpiochip*}
+let GPIO_MB2=$GPIO_MB1+23
+
+CHIP123=$(get_gpiochip 1 0023)
+let GPIO_XX1=${CHIP123#gpiochip*}
+let GPIO_XX2=$GPIO_XX1+23
+let GPIO_XXO2=$GPIO_XX1+15
+
+CHIP420=$(get_gpiochip 4 0020)
+let GPIO_CELF1=${CHIP420#gpiochip*}
+let GPIO_CELF2=$GPIO_CELF1+7
+
+for pin in $(seq $GPIO_MB1 $GPIO_MB2) $(seq $GPIO_XX1 $GPIO_XX2) \
+		$(seq $GPIO_CELF1 $GPIO_CELF2)
+do
+	export_gpio $pin
+done
+
+
+
+
+for pin in $(seq $GPIO_MB1 $GPIO_MB2) $(seq $GPIO_XX1 $GPIO_XXO2) \
+	$(seq $GPIO_CELF1 $GPIO_CELF2)	  
+do
+	setO gpio$pin
+done
+
+
+mkdir -p /dev/gpio/CLK/MB/RDW
+let MBX=$GPIO_MB1
+mkln gpio$MBX CLK/MB/RDW/R6; let MBX=$MBX+1
+mkln gpio$MBX CLK/MB/RDW/R5; let MBX=$MBX+1
+mkln gpio$MBX CLK/MB/RDW/R4; let MBX=$MBX+1
+mkln gpio$MBX CLK/MB/RDW/R3; let MBX=$MBX+1
+mkln gpio$MBX CLK/MB/RDW/R2; let MBX=$MBX+1
+mkln gpio$MBX CLK/MB/RDW/R1; let MBX=$MBX+1
+mkln gpio$MBX CLK/MB/RDW/R0; let MBX=$MBX+1
+
+mkdir /dev/gpio/CLK/MB/FDW
+mkln gpio$MBX CLK/MB/FDW/F6; let MBX=$MBX+1
+mkln gpio$MBX CLK/MB/FDW/F5; let MBX=$MBX+1
+mkln gpio$MBX CLK/MB/FDW/F4; let MBX=$MBX+1
+mkln gpio$MBX CLK/MB/FDW/F3; let MBX=$MBX+1
+mkln gpio$MBX CLK/MB/FDW/F2; let MBX=$MBX+1
+mkln gpio$MBX CLK/MB/FDW/F1; let MBX=$MBX+1
+mkln gpio$MBX CLK/MB/FDW/F0; let MBX=$MBX+1
+
+mkdir /dev/gpio/CLK/MB/ODW
+mkln gpio$MBX CLK/MB/ODW/S1; let MBX=$MBX+1
+mkln gpio$MBX CLK/MB/ODW/S0; let MBX=$MBX+1
+
+
+gpioXXX() {
+	let lgp=$GPIO_XX1+$1
+	echo gpio$lgp
+}
+
+
+mkdir -p /dev/gpio/LED
+mkln $(gpioXXX  0) LED/FMC1_G 	AL
+mkln $(gpioXXX  1) LED/FMC1_R 	AL
+mkln $(gpioXXX  2) LED/TRG_G 		AL
+mkln $(gpioXXX  3) LED/TRG_R 		AL
+mkln $(gpioXXX  4) LED/CLK_G 		AL
+mkln $(gpioXXX  5) LED/CLK_R 		AL
+
+mkln $(gpioXXX  6) CLK/SYNC_SET_OUT	
+mkln $(gpioXXX  7) CLK/SYNC_SET_IN     
+mkln $(gpioXXX  8) CLK/MB/ICS_CLK2_OE
+mkln $(gpioXXX  9) CLK/OSC_X_OE 	AL
+mkln $(gpioXXX 10) CLK/OSC_X_CLK_OE	AL
+mkln $(gpioXXX 11) CLK/FP_CLK_OE 	AL
+mkln $(gpioXXX 12) CLK/FP_OE		AL
+mkln $(gpioXXX 13) 15VA_EN			AL
+mkln $(gpioXXX 14) CLK/Si570_OE
+mkln $(gpioXXX 15) CLK/ZCLK_OE		AL
+
+echo ZCLK DISABLE
+set.sys /dev/gpio/CLK/ZCLK_OE 0
+
+mkln $(gpioXXX 16) fmc1_present		AL
+mkln $(gpioXXX 17) fmc2_present		AL
+mkln $(gpioXXX 18) celf_prsnt		AL
+mkln $(gpioXXX 19) mcvt_prsnt		AL
+mkln $(gpioXXX 20) BV_FMC
+mkln $(gpioXXX 21) BV2
+mkln $(gpioXXX 22) BV3
+mkln $(gpioXXX 23) BV4 
+
+gpioCELFX() {
+	let lgp=$GPIO_CELF1+$1
+	echo gpio$lgp	
+}
+
+
+mkln $(gpioCELFX 0)	LED/FMC2_G	AL
+mkln $(gpioCELFX 1)	LED/FMC2_R	AL
+
+mkdir -p /dev/gpio/CELF
+for dx in $(seq 0 7)
+do
+	mkln $(gpioCELFX $dx) CELF/d$dx
+	ln -s $PWD/$(gpioCELFX $dx)/direction /dev/gpio/CELF/.direction.d$dx	
+	ln -s $PWD/$(gpioCELFX $dx)/active_low /dev/gpio/CELF/.active_low.d$dx
+done
+
+
+echo HDMI sync setting /dev/gpio/CLK/SYNC_SET_IN as INPUT 0
+set.sys /dev/gpio/CLK/SYNC_SET_IN 0
+echo HDMI sync setting /dev/gpio/CLK/SYNC_SET_OUT as OUTPUT 1
+set.sys /dev/gpio/CLK/SYNC_SET_OUT 1
+
+common_end	
+
+# finally hook the CELF service
+
+mkdir -p /etc/acq400/3
+cd /etc/acq400/3
+for file in /dev/hwmon/3/in? /dev/hwmon/3/temp
+do
+        ln -s $file 
+done
+for file in /dev/gpio/CELF/d?
+do
+        ln -s $file
+done
+
+# CELF service #3 is activated as part of inetd, acq420 package...
+
+echo "++ acq1002_init_gpio done"
