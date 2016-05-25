@@ -1,0 +1,14 @@
+#!/bin/sh
+
+/usr/local/bin/kmcu_init_gpio
+FMC_SCAN_FPGA=KMCU FMC_SCAN_SITES="1 2" /usr/local/bin/fmc-scan
+
+hwclk() {
+let HWCYEAR=$(hwclock | awk '{ print $5 }')
+if [ $HWCYEAR -ge 2015 ]; then
+	echo setting date from rtc 
+	hwclock -s
+fi
+}
+
+
