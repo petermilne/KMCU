@@ -1,6 +1,6 @@
 #!/bin/sh
 
-/usr/local/bin/kmcu_init_gpio
+/usr/local/bin/kmcuz30_init_gpio
 FMC_SCAN_FPGA=KMCU FMC_SCAN_SITES="1 2" /usr/local/bin/fmc-scan
 
 hwclk() {
