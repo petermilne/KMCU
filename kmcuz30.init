@@ -1,7 +1,7 @@
 #!/bin/sh
 
 /usr/local/bin/kmcuz30_init_gpio
-FMC_SCAN_FPGA=KMCU FMC_SCAN_SITES="1 2" /usr/local/bin/fmc-scan
+FMC_SCAN_FPGA=KMCUZ30 FMC_SCAN_SITES="1 2" /usr/local/bin/fmc-scan
 
 hwclk() {
 let HWCYEAR=$(hwclock | awk '{ print $5 }')
